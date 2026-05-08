@@ -12,6 +12,13 @@ function RankResume() {
   const [results, setResults] = useState([]);
   const [jobs, setJobs] = useState([]);
 
+  const formatSectionConfidence = (value) => {
+    if (typeof value !== "number" || Number.isNaN(value)) {
+      return "N/A";
+    }
+    return `${Math.round(value * 100)}%`;
+  };
+
   useEffect(() => {
     const loadJobs = async () => {
       try {
@@ -57,10 +64,26 @@ function RankResume() {
         params: { page, limit },
       });
 
-      setResults(res.data.results || []);
+      const normalized = (res.data.results || []).map((row) => {
+        const hasNumericConfidence =
+          typeof row.section_confidence === "number" && !Number.isNaN(row.section_confidence);
+        const inferredConfidence =
+          row.matched_skill_count > 0 || row.semantic_score > 0 ? 0.6 : 0.35;
+
+        return {
+          ...row,
+          must_have_skills: row.must_have_skills || [],
+          must_have_missing_skills: row.must_have_missing_skills || [],
+          section_confidence: hasNumericConfidence
+            ? row.section_confidence
+            : inferredConfidence,
+        };
+      });
+
+      setResults(normalized);
       setStatus({
         type: "success",
-        message: `Loaded ${res.data.results?.length || 0} of ${res.data.total_applicants || 0} applicants.`,
+        message: `Loaded ${normalized.length || 0} of ${res.data.total_applicants || 0} applicants.`,
       });
     } catch (error) {
       setResults([]);
@@ -134,7 +157,9 @@ function RankResume() {
             <thead>
               <tr>
                 <th>Rank</th>
-                <th>Resume</th>
+                <th>Resume Details</th>
+                <th>Match Details</th>
+                <th>Recommendation</th>
                 <th>Semantic</th>
                 <th>Skill</th>
                 <th>Overall</th>
@@ -144,7 +169,45 @@ function RankResume() {
               {results.map((row) => (
                 <tr key={row.resume_id}>
                   <td>{row.rank}</td>
-                  <td>{row.filename}</td>
+                  <td>
+                    <div className="rank-detail">
+                      <strong>{row.original_filename || row.filename}</strong>
+                      <span>Resume ID {row.resume_id}</span>
+                      {row.applied_at ? (
+                        <span>Applied: {new Date(row.applied_at).toLocaleString()}</span>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="rank-detail">
+                      <span>
+                        Matched skills: {row.matched_skill_count}/{row.total_job_skills}
+                      </span>
+                      <span>
+                        Section confidence: {formatSectionConfidence(row.section_confidence)}
+                      </span>
+                      {row.matched_skills?.length ? (
+                        <p>{row.matched_skills.join(", ")}</p>
+                      ) : (
+                        <p>No direct skill phrase matches found.</p>
+                      )}
+                      {row.must_have_skills?.length ? (
+                        <p>Must-have: {row.must_have_skills.join(", ")}</p>
+                      ) : null}
+                      {row.must_have_missing_skills?.length ? (
+                        <p>Missing must-have: {row.must_have_missing_skills.join(", ")}</p>
+                      ) : null}
+                      {row.missing_skills?.length ? (
+                        <p>Missing: {row.missing_skills.join(", ")}</p>
+                      ) : null}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="rank-detail">
+                      <strong>{row.recommendation || "N/A"}</strong>
+                      <p>{row.summary || "No summary available."}</p>
+                    </div>
+                  </td>
                   <td>{row.semantic_score}</td>
                   <td>{row.skill_alignment}</td>
                   <td>{row.overall_score}</td>

@@ -532,11 +532,35 @@
   border-bottom: 1px solid rgba(27, 43, 52, 0.12);
   text-align: left;
   padding: 0.65rem 0.6rem;
+  vertical-align: top;
 }
 
 .result-table th {
   color: #244252;
   font-size: 0.85rem;
+}
+
+.rank-detail {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.rank-detail strong {
+  color: #102a36;
+  font-family: "Outfit", "Franklin Gothic Medium", sans-serif;
+}
+
+.rank-detail span {
+  color: #607783;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.rank-detail p {
+  margin: 0;
+  color: #4c6672;
+  font-size: 0.85rem;
+  line-height: 1.35;
 }
 
 .list-panel {

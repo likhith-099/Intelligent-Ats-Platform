@@ -92,6 +92,124 @@ def encode_chunks(chunks: list) -> list:
     return [model.encode(chunk).tolist() for chunk in chunks]
 
 
+def extract_job_skills(job_description: str) -> list[str]:
+    """Extract normalized skill terms from either comma-separated or prose descriptions."""
+    text = (job_description or "").strip().lower()
+    if not text:
+        return []
+
+    # Prefer explicit separators when present (common for skill-list style job descriptions).
+    has_explicit_separators = any(sep in text for sep in [",", "\n", ";", "|"])
+    if has_explicit_separators:
+        parts = re.split(r"[,\n;|]+", text)
+        normalized = []
+        for part in parts:
+            skill = re.sub(r"\s+", " ", part).strip(" .:-")
+            if 1 < len(skill) <= 80:
+                normalized.append(skill)
+        # Deduplicate while preserving order.
+        return list(dict.fromkeys(normalized))
+
+    # Fallback for prose: noun chunks from spaCy.
+    doc_job = get_nlp()(text)
+    noun_chunks = []
+    for chunk in doc_job.noun_chunks:
+        skill = re.sub(r"\s+", " ", chunk.text.lower().strip(" .:-"))
+        if 1 < len(skill) <= 80:
+            noun_chunks.append(skill)
+    return list(dict.fromkeys(noun_chunks))
+
+
+def extract_relevant_resume_text(resume_text: str) -> str:
+    """Prefer resume sections that best represent role-fit evidence."""
+    text = (resume_text or "").strip()
+    if not text:
+        return ""
+
+    section_heading_pattern = re.compile(
+        r"^\s*(skills?|technical skills?|technologies|experience|work experience|"
+        r"projects?|professional experience|summary|profile)\s*$",
+        re.IGNORECASE,
+    )
+
+    lines = text.splitlines()
+    sections = []
+    current_heading = "general"
+    current_lines = []
+
+    for raw_line in lines:
+        line = raw_line.strip()
+        if section_heading_pattern.match(line):
+            if current_lines:
+                sections.append((current_heading.lower(), "\n".join(current_lines).strip()))
+                current_lines = []
+            current_heading = line
+            continue
+        current_lines.append(raw_line)
+
+    if current_lines:
+        sections.append((current_heading.lower(), "\n".join(current_lines).strip()))
+
+    preferred_keywords = ("skill", "technolog", "experience", "project", "summary", "profile")
+    preferred_sections = []
+    fallback_sections = []
+
+    for heading, body in sections:
+        normalized_body = body.strip()
+        if not normalized_body:
+            continue
+        if any(keyword in heading for keyword in preferred_keywords):
+            preferred_sections.append(normalized_body)
+        else:
+            fallback_sections.append(normalized_body)
+
+    # Use preferred sections when available, otherwise keep original resume text.
+    if preferred_sections:
+        return "\n".join(preferred_sections)
+    if fallback_sections:
+        return "\n".join(fallback_sections)
+    return text
+
+
+def get_resume_focus_data(resume_text: str) -> tuple[str, float, bool]:
+    """Return focused text, confidence, and whether named sections were detected."""
+    text = (resume_text or "").strip()
+    if not text:
+        return "", 0.0, False
+
+    focused = extract_relevant_resume_text(text)
+    if not focused:
+        return text, 0.25, False
+
+    # If focus text is shorter than source, we likely found targeted sections.
+    total_len = max(len(text), 1)
+    focus_ratio = len(focused) / total_len
+    detected_sections = focus_ratio < 0.95
+    confidence = 0.8 if detected_sections else 0.45
+    return focused, confidence, detected_sections
+
+
+def extract_must_have_skills(job_description: str, job_skills: list[str]) -> list[str]:
+    """Detect must-have skills from requirement-like job description segments."""
+    text = (job_description or "").lower()
+    if not text or not job_skills:
+        return []
+
+    must_signal = re.compile(r"\b(must|required|mandatory|essential|need to have)\b")
+    candidate_segments = re.split(r"[.\n;]+", text)
+    required_segments = [segment for segment in candidate_segments if must_signal.search(segment)]
+
+    if not required_segments:
+        return []
+
+    must_have = []
+    for skill in job_skills:
+        if any(skill in segment for segment in required_segments):
+            must_have.append(skill)
+
+    return list(dict.fromkeys(must_have))
+
+
 # ================================
 # REGISTER (WITH ROLE)
 # ================================
@@ -417,33 +535,103 @@ def apply_to_job(job_id: int,
 
 def compute_resume_score(resume, job):
     # Vectorized similarity computation
-    r_embeddings = np.array(resume.chunk_embeddings)
+    resume_focus_text, section_confidence, detected_sections = get_resume_focus_data(resume.content)
+    resume_focus_chunks = semantic_chunk(resume_focus_text)
+    if not resume_focus_chunks:
+        resume_focus_chunks = semantic_chunk(resume.content)
+
+    # Prefer focused chunks, then filter by job-skill relevance if possible.
+    job_skills = extract_job_skills(job.description)
+    must_have_skills = extract_must_have_skills(job.description, job_skills)
+    if job_skills:
+        filtered_chunks = []
+        for chunk in resume_focus_chunks:
+            chunk_lower = chunk.lower()
+            if any(skill in chunk_lower for skill in job_skills):
+                filtered_chunks.append(chunk)
+        if filtered_chunks:
+            resume_focus_chunks = filtered_chunks
+            section_confidence = max(section_confidence, 0.7 if detected_sections else 0.6)
+
+    r_embeddings = np.array(encode_chunks(resume_focus_chunks))
     j_embeddings = np.array(job.chunk_embeddings)
 
     if len(r_embeddings) == 0 or len(j_embeddings) == 0:
-        return 0, 0, 0
+        return {
+            "semantic_score": 0,
+            "skill_alignment": 0,
+            "overall_score": 0,
+            "matched_skills": [],
+            "matched_skill_count": 0,
+            "total_job_skills": 0,
+            "missing_skills": [],
+            "recommendation": "Low Fit",
+            "summary": "Resume content is insufficient for meaningful ranking.",
+            "section_confidence": 0.0,
+        }
 
     # Compute all-to-all similarity matrix
     similarities = cosine_similarity(r_embeddings, j_embeddings)
     
-    # Take the max similarity for each resume chunk and average the top ones, 
-    # or just keep the original 'max' logic but optimized.
-    # Let's improve it: take the average of the maximum similarities for each resume chunk
+    # For each resume chunk, compute its best match to any job chunk.
     max_sim_per_chunk = np.max(similarities, axis=1)
-    semantic_score = round(float(np.mean(max_sim_per_chunk)) * 100, 2)
+
+    # Avoid over-penalizing long resumes with unrelated sections by focusing
+    # on the strongest evidence chunks rather than averaging every chunk.
+    top_k = max(3, int(np.ceil(len(max_sim_per_chunk) * 0.35)))
+    top_scores = np.sort(max_sim_per_chunk)[-top_k:]
+    semantic_score = round(float(np.mean(top_scores)) * 100, 2)
 
     # Skill Alignment
-    doc_job = get_nlp()(job.description)
-    job_phrases = {chunk.text.lower().strip() for chunk in doc_job.noun_chunks}
     resume_lower = resume.content.lower()
 
-    matched = [p for p in job_phrases if p in resume_lower]
-    total = len(job_phrases)
+    matched = sorted([p for p in job_skills if p in resume_lower])
+    missing = sorted([p for p in job_skills if p not in resume_lower])
+    must_have_missing = sorted([p for p in must_have_skills if p not in resume_lower])
+    total = len(job_skills)
 
     skill_alignment = round((len(matched) / total) * 100, 2) if total > 0 else 0
-    overall_score = round((0.6 * semantic_score) + (0.4 * skill_alignment), 2)
+    # Slightly favor skill coverage for explicit skill-list job descriptions.
+    overall_score = round((0.5 * semantic_score) + (0.5 * skill_alignment), 2)
 
-    return semantic_score, skill_alignment, overall_score
+    if overall_score >= 75:
+        recommendation = "Strong Fit"
+    elif overall_score >= 55:
+        recommendation = "Consider"
+    else:
+        # If skills are very strong but semantic context is weak, keep the
+        # candidate in consideration rather than outright low fit.
+        recommendation = "Consider" if skill_alignment >= 80 and semantic_score >= 20 else "Low Fit"
+
+    if must_have_missing:
+        recommendation = "Low Fit"
+
+    if recommendation == "Strong Fit":
+        summary = "Good profile alignment across semantic match and required skills."
+    elif recommendation == "Consider":
+        summary = "Shows potential but has noticeable gaps against job requirements."
+    else:
+        summary = "Limited alignment with the job profile at this stage."
+
+    # Avoid false-zero confidence on valid resumes due to parser quirks.
+    if resume.content and resume.content.strip():
+        section_confidence = max(section_confidence, 0.35)
+    section_confidence = round(section_confidence, 2)
+
+    return {
+        "semantic_score": semantic_score,
+        "skill_alignment": skill_alignment,
+        "overall_score": overall_score,
+        "matched_skills": matched[:12],
+        "missing_skills": missing[:8],
+        "matched_skill_count": len(matched),
+        "total_job_skills": total,
+        "must_have_skills": must_have_skills[:8],
+        "must_have_missing_skills": must_have_missing[:8],
+        "recommendation": recommendation,
+        "summary": summary,
+        "section_confidence": section_confidence,
+    }
 
 
 # ================================
@@ -483,21 +671,38 @@ def rank_applicants(
     ).all()
 
     if not applications:
-        raise HTTPException(status_code=404, detail="No applicants found")
+        return {
+            "page": page,
+            "limit": limit,
+            "total_applicants": 0,
+            "results": []
+        }
 
     results = []
 
     for application in applications:
         resume = application.resume
 
-        semantic, skill, overall = compute_resume_score(resume, job)
+        score_details = compute_resume_score(resume, job)
 
         results.append({
+            "application_id": application.id,
+            "applied_at": application.created_at.isoformat() if application.created_at else None,
             "resume_id": resume.id,
             "filename": resume.filename,
-            "semantic_score": semantic,
-            "skill_alignment": skill,
-            "overall_score": overall
+            "original_filename": resume.original_filename,
+            "semantic_score": score_details["semantic_score"],
+            "skill_alignment": score_details["skill_alignment"],
+            "overall_score": score_details["overall_score"],
+            "matched_skills": score_details["matched_skills"],
+            "missing_skills": score_details["missing_skills"],
+            "matched_skill_count": score_details["matched_skill_count"],
+            "total_job_skills": score_details["total_job_skills"],
+            "must_have_skills": score_details["must_have_skills"],
+            "must_have_missing_skills": score_details["must_have_missing_skills"],
+            "recommendation": score_details["recommendation"],
+            "summary": score_details["summary"],
+            "section_confidence": score_details["section_confidence"],
         })
 
     results.sort(key=lambda x: x["overall_score"], reverse=True)
