@@ -43,5 +43,97 @@
 Add your screenshots here after upload:
 
 ```md
+
 ![Dashboard](./assets/dashboard.png)
 ![Rank Applicants](./assets/ranking.png)
+
+## Tech Stack
+
+### Frontend
+- React
+- Vite
+- React Router
+- Axios
+
+### Backend
+- FastAPI
+- SQLAlchemy
+- PostgreSQL
+- Uvicorn
+
+### AI/NLP
+- spaCy (`en_core_web_sm`)
+- Sentence Transformers (`all-MiniLM-L6-v2`)
+- scikit-learn (cosine similarity)
+
+### Language
+- Python
+- JavaScript
+
+## Project Structure
+
+```text
+resume_ai/
+├── ats-frontend/
+├── backend/
+├── requirements.txt
+└── .env
+Setup
+1) Clone
+bash
+
+git clone https://github.com/likhith-099/Intelligent-Ats-Platform.git
+cd Intelligent-Ats-Platform
+2) Backend
+bash
+
+python -m venv venv
+venv\Scripts\activate
+pip install -r requirements.txt
+python -m spacy download en_core_web_sm
+Create .env in root:
+
+env
+
+DATABASE_URL=postgresql://postgres:password@localhost:5432/resume_ai
+SECRET_KEY=change_this_secret
+ALGORITHM=HS256
+ACCESS_TOKEN_EXPIRE_MINUTES=30
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+Run backend:
+
+bash
+
+python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
+3) Frontend
+bash
+
+cd ats-frontend
+npm install
+npm run dev
+URLs
+Frontend: http://localhost:5173
+Backend API Docs: http://127.0.0.1:8000/docs
+Main Workflow
+Register/Login as recruiter or candidate
+Recruiter creates jobs
+Candidate uploads resume and applies
+Recruiter runs ranking
+Platform returns ranked results with recommendations
+Important API Endpoints
+Auth
+POST /register
+POST /login
+GET /me
+Jobs
+POST /create-job
+GET /jobs
+PUT /jobs/{job_id}
+DELETE /jobs/{job_id}
+Candidate
+POST /upload-resume
+GET /my-resumes
+POST /apply/{job_id}/{resume_id}
+GET /my-applications
+Ranking
+POST /rank-applicants/{job_id}?page=1&limit=10
