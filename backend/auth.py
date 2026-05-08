@@ -10,7 +10,20 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 SECRET_KEY = os.getenv("SECRET_KEY")
 ALGORITHM = os.getenv("ALGORITHM")
-ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ACCESS_TOKEN_EXPIRE_MINUTES = os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES")
+
+# Validate environment variables
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable is not set")
+if not ALGORITHM:
+    raise ValueError("ALGORITHM environment variable is not set")
+if not ACCESS_TOKEN_EXPIRE_MINUTES:
+    raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES environment variable is not set")
+
+try:
+    ACCESS_TOKEN_EXPIRE_MINUTES = int(ACCESS_TOKEN_EXPIRE_MINUTES)
+except ValueError:
+    raise ValueError("ACCESS_TOKEN_EXPIRE_MINUTES must be a valid integer")
 
 def hash_password(password: str):
     return pwd_context.hash(password)
