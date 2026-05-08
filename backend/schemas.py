@@ -50,6 +50,10 @@ class JobCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=200)
     description: str = Field(..., min_length=10, max_length=5000)
 
+class JobUpdate(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = Field(..., min_length=10, max_length=5000)
+
 
 class JobResponse(BaseModel):
     id: int

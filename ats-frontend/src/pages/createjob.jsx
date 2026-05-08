@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import API from "../api/api";
 import getApiErrorMessage from "../api/getApiErrorMessage";
@@ -8,41 +8,6 @@ function CreateJob() {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [status, setStatus] = useState({ type: "idle", message: "" });
-  const [jobs, setJobs] = useState([]);
-
-  useEffect(() => {
-    let isMounted = true;
-
-    const loadJobs = async () => {
-      try {
-        const res = await API.get("/jobs");
-        if (isMounted) {
-          setJobs(res.data || []);
-        }
-      } catch {
-        if (isMounted) {
-          setJobs([]);
-        }
-      }
-    };
-
-    if (user.role === "recruiter") {
-      loadJobs();
-    }
-
-    return () => {
-      isMounted = false;
-    };
-  }, [user.role]);
-
-  const refreshJobs = async () => {
-    try {
-      const res = await API.get("/jobs");
-      setJobs(res.data || []);
-    } catch {
-      setJobs([]);
-    }
-  };
 
   if (user.role !== "recruiter") {
     return (
@@ -79,7 +44,6 @@ function CreateJob() {
       });
       setTitle("");
       setDescription("");
-      refreshJobs();
     } catch (error) {
       setStatus({
         type: "error",
@@ -127,23 +91,6 @@ function CreateJob() {
           <p className={`status-message ${status.type}`}>{status.message}</p>
         ) : null}
       </form>
-
-      {jobs.length > 0 ? (
-        <div className="list-panel">
-          <h3>Your Jobs</h3>
-          <div className="item-list">
-            {jobs.map((job) => (
-              <article className="list-item" key={job.id}>
-                <div>
-                  <strong>{job.title}</strong>
-                  <span>Job ID {job.id}</span>
-                </div>
-                <p>{job.description}</p>
-              </article>
-            ))}
-          </div>
-        </div>
-      ) : null}
     </section>
   );
 }

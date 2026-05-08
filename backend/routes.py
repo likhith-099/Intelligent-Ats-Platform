@@ -270,6 +270,60 @@ def list_jobs(current_user: models.User = Depends(auth.get_current_user),
 
     return query.all()
 
+@router.put("/jobs/{job_id}")
+def update_job(
+    job_id: int,
+    job_data: schemas.JobUpdate,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "recruiter":
+        raise HTTPException(status_code=403, detail="Only recruiters can update jobs")
+
+    job = db.query(models.Job).filter(
+        models.Job.id == job_id,
+        models.Job.user_id == current_user.id
+    ).first()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    chunks = semantic_chunk(job_data.description)
+    chunk_embeddings = encode_chunks(chunks)
+
+    job.title = job_data.title.strip()
+    job.description = job_data.description.strip()
+    job.chunks = chunks
+    job.chunk_embeddings = chunk_embeddings
+
+    db.commit()
+    db.refresh(job)
+
+    return {"message": "Job updated successfully", "job_id": job.id}
+
+@router.delete("/jobs/{job_id}")
+def delete_job(
+    job_id: int,
+    current_user: models.User = Depends(auth.get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "recruiter":
+        raise HTTPException(status_code=403, detail="Only recruiters can delete jobs")
+
+    job = db.query(models.Job).filter(
+        models.Job.id == job_id,
+        models.Job.user_id == current_user.id
+    ).first()
+
+    if not job:
+        raise HTTPException(status_code=404, detail="Job not found")
+
+    db.query(models.Application).filter(models.Application.job_id == job.id).delete()
+    db.delete(job)
+    db.commit()
+
+    return {"message": "Job deleted successfully", "job_id": job_id}
+
 
 @router.get("/my-resumes", response_model=list[schemas.ResumeResponse])
 def list_my_resumes(current_user: models.User = Depends(auth.get_current_user),

@@ -594,6 +594,18 @@
   color: #4c6672;
 }
 
+.job-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.job-actions .secondary-button,
+.job-actions .ghost-button {
+  margin-top: 0;
+}
+
 .job-card {
   display: grid;
   gap: 0.8rem;
