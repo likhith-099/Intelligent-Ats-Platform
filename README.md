@@ -45,7 +45,7 @@ Add your screenshots here after upload:
 ```md
 
 ![Dashboard](./assets/dashboard.png)
-![Rank Applicants](./assets/ranking.png)
+![Rank Applicants](./assets/rank.png)
 
 ## Tech Stack
 
