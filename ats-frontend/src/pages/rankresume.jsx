@@ -11,13 +11,7 @@ function RankResume() {
   const [status, setStatus] = useState({ type: "idle", message: "" });
   const [results, setResults] = useState([]);
   const [jobs, setJobs] = useState([]);
-
-  const formatSectionConfidence = (value) => {
-    if (typeof value !== "number" || Number.isNaN(value)) {
-      return "N/A";
-    }
-    return `${Math.round(value * 100)}%`;
-  };
+  const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
     const loadJobs = async () => {
@@ -64,26 +58,11 @@ function RankResume() {
         params: { page, limit },
       });
 
-      const normalized = (res.data.results || []).map((row) => {
-        const hasNumericConfidence =
-          typeof row.section_confidence === "number" && !Number.isNaN(row.section_confidence);
-        const inferredConfidence =
-          row.matched_skill_count > 0 || row.semantic_score > 0 ? 0.6 : 0.35;
-
-        return {
-          ...row,
-          must_have_skills: row.must_have_skills || [],
-          must_have_missing_skills: row.must_have_missing_skills || [],
-          section_confidence: hasNumericConfidence
-            ? row.section_confidence
-            : inferredConfidence,
-        };
-      });
-
-      setResults(normalized);
+      setResults(res.data.results || []);
+      setExpandedRow(null);
       setStatus({
         type: "success",
-        message: `Loaded ${normalized.length || 0} of ${res.data.total_applicants || 0} applicants.`,
+        message: `Loaded ${res.data.results?.length || 0} of ${res.data.total_applicants || 0} applicants.`,
       });
     } catch (error) {
       setResults([]);
@@ -92,6 +71,16 @@ function RankResume() {
         message: getApiErrorMessage(error, "Unable to rank applicants right now."),
       });
     }
+  };
+
+  const toggleExpand = (resumeId) => {
+    setExpandedRow(expandedRow === resumeId ? null : resumeId);
+  };
+
+  const getScoreClass = (score) => {
+    if (score >= 70) return "score-high";
+    if (score >= 40) return "score-medium";
+    return "score-low";
   };
 
   return (
@@ -153,65 +142,91 @@ function RankResume() {
 
       {results.length > 0 ? (
         <div className="table-wrap">
-          <table className="result-table">
+          <table className="result-table ranking-table">
             <thead>
               <tr>
-                <th>Rank</th>
-                <th>Resume Details</th>
-                <th>Match Details</th>
-                <th>Recommendation</th>
+                <th style={{ width: "50px" }}>#</th>
+                <th>Applicant</th>
+                <th>Resume</th>
                 <th>Semantic</th>
-                <th>Skill</th>
+                <th>Keywords</th>
+                <th>Content</th>
                 <th>Overall</th>
+                <th>Details</th>
               </tr>
             </thead>
             <tbody>
               {results.map((row) => (
-                <tr key={row.resume_id}>
-                  <td>{row.rank}</td>
-                  <td>
-                    <div className="rank-detail">
-                      <strong>{row.original_filename || row.filename}</strong>
-                      <span>Resume ID {row.resume_id}</span>
-                      {row.applied_at ? (
-                        <span>Applied: {new Date(row.applied_at).toLocaleString()}</span>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rank-detail">
-                      <span>
-                        Matched skills: {row.matched_skill_count}/{row.total_job_skills}
-                      </span>
-                      <span>
-                        Section confidence: {formatSectionConfidence(row.section_confidence)}
-                      </span>
-                      {row.matched_skills?.length ? (
-                        <p>{row.matched_skills.join(", ")}</p>
-                      ) : (
-                        <p>No direct skill phrase matches found.</p>
-                      )}
-                      {row.must_have_skills?.length ? (
-                        <p>Must-have: {row.must_have_skills.join(", ")}</p>
-                      ) : null}
-                      {row.must_have_missing_skills?.length ? (
-                        <p>Missing must-have: {row.must_have_missing_skills.join(", ")}</p>
-                      ) : null}
-                      {row.missing_skills?.length ? (
-                        <p>Missing: {row.missing_skills.join(", ")}</p>
-                      ) : null}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="rank-detail">
-                      <strong>{row.recommendation || "N/A"}</strong>
-                      <p>{row.summary || "No summary available."}</p>
-                    </div>
-                  </td>
-                  <td>{row.semantic_score}</td>
-                  <td>{row.skill_alignment}</td>
-                  <td>{row.overall_score}</td>
-                </tr>
+                <>
+                  <tr key={row.resume_id} className={expandedRow === row.resume_id ? "row-expanded" : ""}>
+                    <td className="rank-cell">{row.rank}</td>
+                    <td className="applicant-cell">
+                      <div className="applicant-name">{row.applicant_name}</div>
+                      <div className="applicant-email">{row.applicant_email}</div>
+                    </td>
+                    <td>{row.filename}</td>
+                    <td className={getScoreClass(row.semantic_score)}>{row.semantic_score}%</td>
+                    <td className={getScoreClass(row.keyword_score)}>{row.keyword_score}%</td>
+                    <td className={getScoreClass(row.content_density)}>{row.content_density}%</td>
+                    <td className={`overall-score ${getScoreClass(row.overall_score)}`}>
+                      <strong>{row.overall_score}%</strong>
+                    </td>
+                    <td>
+                      <button
+                        className="expand-btn"
+                        onClick={() => toggleExpand(row.resume_id)}
+                      >
+                        {expandedRow === row.resume_id ? "−" : "+"}
+                      </button>
+                    </td>
+                  </tr>
+                  {expandedRow === row.resume_id && (
+                    <tr key={`${row.resume_id}-details`} className="details-row">
+                      <td colSpan={8}>
+                        <div className="details-content">
+                          <div className="details-grid">
+                            <div className="detail-item">
+                              <span className="detail-label">Education</span>
+                              <span className={`detail-value ${row.has_education ? "present" : "missing"}`}>
+                                {row.has_education ? "✓ Found" : "✗ Not found"}
+                              </span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Experience</span>
+                              <span className={`detail-value ${row.has_experience ? "present" : "missing"}`}>
+                                {row.has_experience ? "✓ Found" : "✗ Not found"}
+                              </span>
+                            </div>
+                            <div className="detail-item">
+                              <span className="detail-label">Applied</span>
+                              <span className="detail-value">{row.applied_at ? new Date(row.applied_at).toLocaleDateString() : "N/A"}</span>
+                            </div>
+                          </div>
+                          {row.matched_keywords?.length > 0 && (
+                            <div className="keyword-section">
+                              <span className="detail-label">Matched Keywords:</span>
+                              <div className="keyword-tags matched">
+                                {row.matched_keywords.map((kw, i) => (
+                                  <span key={i} className="keyword-tag">{kw}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {row.missing_keywords?.length > 0 && (
+                            <div className="keyword-section">
+                              <span className="detail-label">Missing Keywords:</span>
+                              <div className="keyword-tags missing">
+                                {row.missing_keywords.map((kw, i) => (
+                                  <span key={i} className="keyword-tag">{kw}</span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>
               ))}
             </tbody>
           </table>

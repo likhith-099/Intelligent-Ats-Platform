@@ -1,29 +1,57 @@
-# Resume AI ATS Platform
+<h1 align="center">Intelligent ATS Platform</h1>
+<p align="center">
+  AI-powered Applicant Tracking System for smarter hiring decisions
+</p>
 
-An end-to-end AI-powered Applicant Tracking System (ATS) for modern hiring workflows.
+<p align="center">
+  <img src="https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white" />
+  <img src="https://img.shields.io/badge/Frontend-React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB" />
+  <img src="https://img.shields.io/badge/Database-PostgreSQL-336791?style=for-the-badge&logo=postgresql&logoColor=white" />
+  <img src="https://img.shields.io/badge/NLP-spaCy-09A3D5?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Embeddings-SentenceTransformers-FF6F61?style=for-the-badge" />
+</p>
 
-This project helps recruiters and candidates collaborate in one platform:
-- Recruiters create jobs, manage listings, and rank applicants.
-- Candidates upload resumes, browse jobs, and apply.
-- The platform computes semantic + skill-based fit scores with actionable recommendations.
+---
 
-## Highlights
+## Overview
+
+**Intelligent ATS Platform** helps recruiters and candidates collaborate in one streamlined workflow:
+
+- Recruiters create jobs, manage listings, and rank applicants
+- Candidates upload resumes and apply to relevant roles
+- AI scoring combines **semantic match** + **skill coverage** + **recommendation labels**
+
+---
+
+## Core Features
 
 - Role-based authentication (`recruiter`, `candidate`)
 - Resume upload and parsing (PDF)
-- Job creation, edit, and delete
-- Candidate job application flow
-- AI ranking engine with:
-  - Semantic similarity scoring
-  - Skill coverage scoring
-  - Recommendation labels (`Strong Fit`, `Consider`, `Low Fit`)
+- Job create/edit/delete
+- Candidate application workflow
+- Applicant ranking engine with:
+  - Semantic score
+  - Skill score
+  - Overall score
+  - Recommendation (`Strong Fit`, `Consider`, `Low Fit`)
   - Matched/missing skills output
-- Clean React dashboard UI with recruiter and candidate journeys
+
+---
+
+## Quick Preview
+
+Add your screenshots here after upload:
+
+```md
+
+![Dashboard](./assets/dashboard.png)
+![Rank Applicants](./assets/ranking.png)
 
 ## Tech Stack
 
 ### Frontend
-- React + Vite
+- React
+- Vite
 - React Router
 - Axios
 
@@ -31,142 +59,81 @@ This project helps recruiters and candidates collaborate in one platform:
 - FastAPI
 - SQLAlchemy
 - PostgreSQL
+- Uvicorn
+
+### AI/NLP
 - spaCy (`en_core_web_sm`)
 - Sentence Transformers (`all-MiniLM-L6-v2`)
 - scikit-learn (cosine similarity)
+
+### Language
+- Python
+- JavaScript
 
 ## Project Structure
 
 ```text
 resume_ai/
-├── ats-frontend/         # React frontend
-│   ├── src/
-│   │   ├── pages/
-│   │   ├── components/
-│   │   └── api/
-├── backend/              # FastAPI backend
-│   ├── main.py
-│   ├── routes.py
-│   ├── models.py
-│   ├── schemas.py
-│   ├── auth.py
-│   └── database.py
-├── logs/
-├── uploads/
+├── ats-frontend/
+├── backend/
 ├── requirements.txt
 └── .env
-```
+Setup
+1) Clone
+bash
 
-## Setup
+git clone https://github.com/likhith-099/Intelligent-Ats-Platform.git
+cd Intelligent-Ats-Platform
+2) Backend
+bash
 
-## 1) Clone and Enter Project
-
-```bash
-git clone <your-repo-url>
-cd resume_ai
-```
-
-## 2) Backend Setup
-
-```bash
 python -m venv venv
 venv\Scripts\activate
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-```
+Create .env in root:
 
-Create `.env` in project root:
+env
 
-```env
 DATABASE_URL=postgresql://postgres:password@localhost:5432/resume_ai
-SECRET_KEY=change_me_to_a_strong_secret
+SECRET_KEY=change_this_secret
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173
-```
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+Run backend:
 
-Start backend:
+bash
 
-```bash
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-```
+3) Frontend
+bash
 
-## 3) Frontend Setup
-
-```bash
 cd ats-frontend
 npm install
 npm run dev
-```
-
-Frontend: `http://localhost:5173`  
-Backend docs: `http://127.0.0.1:8000/docs`
-
-## Core Workflow
-
-1. Register/Login as recruiter or candidate.
-2. Recruiter creates job descriptions.
-3. Candidate uploads resume and applies to jobs.
-4. Recruiter runs ranking for a job.
-5. System returns ranked results with fit signals and recommendations.
-
-## Ranking Output Explained
-
-- `Semantic`: contextual similarity between resume and job content.
-- `Skill`: explicit skill coverage match.
-- `Overall`: weighted blend of semantic + skill scores.
-- `Recommendation`:
-  - `Strong Fit`: high confidence match
-  - `Consider`: moderate fit with gaps
-  - `Low Fit`: weak fit or missing required signals
-
-## API Endpoints (Key)
-
-Auth:
-- `POST /register`
-- `POST /login`
-- `GET /me`
-
-Jobs:
-- `POST /create-job`
-- `GET /jobs`
-- `PUT /jobs/{job_id}`
-- `DELETE /jobs/{job_id}`
-
-Resumes & Applications:
-- `POST /upload-resume`
-- `GET /my-resumes`
-- `POST /apply/{job_id}/{resume_id}`
-- `GET /my-applications`
-
-Ranking:
-- `POST /rank-applicants/{job_id}?page=1&limit=10`
-
-## Troubleshooting
-
-- Backend not reachable:
-  - Ensure FastAPI is running on `127.0.0.1:8000`.
-- DB errors:
-  - Check `DATABASE_URL` and PostgreSQL service status.
-- CORS issues:
-  - Confirm frontend URL is included in `ALLOWED_ORIGINS`.
-- Model load delays:
-  - First semantic scoring call may take longer while model initializes.
-
-## Security Notes
-
-- Replace `SECRET_KEY` in production.
-- Restrict `ALLOWED_ORIGINS` to trusted domains.
-- Use HTTPS in production.
-- Store uploaded files in secure storage (S3/GCS) for production environments.
-
-## Future Improvements
-
-- Alembic migrations for schema versioning
-- Recruiter analytics dashboard
-- Resume section-level explainability
-- Batch ranking and export features
-
----
-
-Built to streamline hiring with practical AI signals and a clean recruiter-candidate workflow.
+URLs
+Frontend: http://localhost:5173
+Backend API Docs: http://127.0.0.1:8000/docs
+Main Workflow
+Register/Login as recruiter or candidate
+Recruiter creates jobs
+Candidate uploads resume and applies
+Recruiter runs ranking
+Platform returns ranked results with recommendations
+Important API Endpoints
+Auth
+POST /register
+POST /login
+GET /me
+Jobs
+POST /create-job
+GET /jobs
+PUT /jobs/{job_id}
+DELETE /jobs/{job_id}
+Candidate
+POST /upload-resume
+GET /my-resumes
+POST /apply/{job_id}/{resume_id}
+GET /my-applications
+Ranking
+POST /rank-applicants/{job_id}?page=1&limit=10

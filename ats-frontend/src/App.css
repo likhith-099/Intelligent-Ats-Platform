@@ -532,7 +532,6 @@
   border-bottom: 1px solid rgba(27, 43, 52, 0.12);
   text-align: left;
   padding: 0.65rem 0.6rem;
-  vertical-align: top;
 }
 
 .result-table th {
@@ -540,27 +539,145 @@
   font-size: 0.85rem;
 }
 
-.rank-detail {
-  display: grid;
-  gap: 0.3rem;
+/* Ranking Table Enhancements */
+.ranking-table {
+  min-width: 900px;
 }
 
-.rank-detail strong {
-  color: #102a36;
-  font-family: "Outfit", "Franklin Gothic Medium", sans-serif;
-}
-
-.rank-detail span {
-  color: #607783;
-  font-size: 0.8rem;
+.ranking-table .rank-cell {
   font-weight: 700;
+  font-size: 1.1rem;
+  color: #0e7a6d;
+  text-align: center;
 }
 
-.rank-detail p {
-  margin: 0;
-  color: #4c6672;
-  font-size: 0.85rem;
-  line-height: 1.35;
+.ranking-table .applicant-cell {
+  vertical-align: middle;
+}
+
+.ranking-table .applicant-name {
+  font-weight: 600;
+  color: #102531;
+}
+
+.ranking-table .applicant-email {
+  font-size: 0.8rem;
+  color: #5a6b75;
+}
+
+.ranking-table .score-high {
+  color: #0e7a6d;
+  font-weight: 600;
+}
+
+.ranking-table .score-medium {
+  color: #c4841d;
+  font-weight: 600;
+}
+
+.ranking-table .score-low {
+  color: #a33;
+  font-weight: 600;
+}
+
+.ranking-table .overall-score strong {
+  font-size: 1.1rem;
+}
+
+.ranking-table .expand-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(27, 43, 52, 0.2);
+  border-radius: 6px;
+  background: #f8faf9;
+  cursor: pointer;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #244252;
+  transition: all 0.2s;
+}
+
+.ranking-table .expand-btn:hover {
+  background: #eef4f2;
+  border-color: #0e7a6d;
+  color: #0e7a6d;
+}
+
+.ranking-table tr.row-expanded {
+  background: #f0f7f5;
+}
+
+.ranking-table .details-row td {
+  padding: 0;
+  background: #f8faf9;
+}
+
+.ranking-table .details-content {
+  padding: 1rem 1.5rem;
+  border-top: 1px dashed rgba(27, 43, 52, 0.15);
+}
+
+.ranking-table .details-grid {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+  flex-wrap: wrap;
+}
+
+.ranking-table .detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.ranking-table .detail-label {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  color: #5a6b75;
+  letter-spacing: 0.05em;
+}
+
+.ranking-table .detail-value {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #102531;
+}
+
+.ranking-table .detail-value.present {
+  color: #0e7a6d;
+}
+
+.ranking-table .detail-value.missing {
+  color: #a33;
+}
+
+.ranking-table .keyword-section {
+  margin-top: 0.75rem;
+}
+
+.ranking-table .keyword-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.4rem;
+}
+
+.ranking-table .keyword-tag {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.ranking-table .keyword-tags.matched .keyword-tag {
+  background: #e6f4f1;
+  color: #0e7a6d;
+  border: 1px solid #b8dcd5;
+}
+
+.ranking-table .keyword-tags.missing .keyword-tag {
+  background: #fce8e8;
+  color: #a33;
+  border: 1px solid #f0b8b8;
 }
 
 .list-panel {
