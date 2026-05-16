@@ -40,7 +40,6 @@
 
 ## Quick Preview
 
-```md
 
 ![Dashboard](assets/dashboard.png)
 ![Rank Applicants](assets/rank.png)
