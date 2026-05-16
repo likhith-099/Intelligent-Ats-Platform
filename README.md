@@ -76,68 +76,178 @@
 
 ## Project Structure
 
-```text
-resume_ai/
-├── ats-frontend/
-├── backend/
-├── requirements.txt
-└── .env
-Setup
-1) Clone
-bash
+## 📂 Project Structure
 
+```text
+Intelligent-Ats-Platform/
+│
+├── ats-frontend/          # React frontend (Vite)
+│   ├── src/
+│   ├── public/
+│   └── package.json
+│
+├── backend/               # FastAPI backend
+│   ├── main.py
+│   ├── models/
+│   ├── routers/
+│   ├── services/
+│   └── database.py
+│
+├── assets/                # Screenshots for README
+│   ├── dashboard.png
+│   └── rank.png
+│
+├── requirements.txt
+├── .env
+└── README.md
+```
+---
+
+## ⚙️ Setup & Installation
+
+### 1️⃣ Clone the Repository
+
+```bash
 git clone https://github.com/likhith-099/Intelligent-Ats-Platform.git
 cd Intelligent-Ats-Platform
-2) Backend
-bash
+```
 
+---
+
+## 🔹 Backend Setup (FastAPI)
+
+### Create Virtual Environment
+
+```bash
 python -m venv venv
-venv\Scripts\activate
+venv\Scripts\activate   # Windows
+```
+
+### Install Dependencies
+
+```bash
 pip install -r requirements.txt
 python -m spacy download en_core_web_sm
-Create .env in root:
+```
 
-env
+### Create `.env` File in Root Directory
 
+Create a file named `.env` and add:
+
+```env
 DATABASE_URL=postgresql://postgres:password@localhost:5432/resume_ai
 SECRET_KEY=change_this_secret
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
-Run backend:
+```
 
-bash
+### Run Backend Server
 
+```bash
 python -m uvicorn backend.main:app --host 127.0.0.1 --port 8000 --reload
-3) Frontend
-bash
+```
 
+Backend runs at:
+
+```
+http://127.0.0.1:8000
+```
+
+API Docs:
+
+```
+http://127.0.0.1:8000/docs
+```
+
+---
+
+## 🔹 Frontend Setup (React + Vite)
+
+```bash
 cd ats-frontend
 npm install
 npm run dev
-URLs
-Frontend: http://localhost:5173
-Backend API Docs: http://127.0.0.1:8000/docs
-Main Workflow
-Register/Login as recruiter or candidate
-Recruiter creates jobs
-Candidate uploads resume and applies
-Recruiter runs ranking
-Platform returns ranked results with recommendations
-Important API Endpoints
-Auth
-POST /register
-POST /login
-GET /me
-Jobs
-POST /create-job
-GET /jobs
-PUT /jobs/{job_id}
-DELETE /jobs/{job_id}
-Candidate
-POST /upload-resume
-GET /my-resumes
-POST /apply/{job_id}/{resume_id}
-GET /my-applications
-Ranking
-POST /rank-applicants/{job_id}?page=1&limit=10
+```
+
+Frontend runs at:
+
+```
+http://localhost:5173
+```
+
+---
+
+## ✅ Main Workflow
+
+1. Register/Login as **recruiter** or **candidate**
+2. Recruiter creates jobs
+3. Candidate uploads resume & applies
+4. Recruiter runs ranking
+5. AI returns ranked applicants with recommendations
+
+---
+
+## 📡 Important API Endpoints
+
+### 🔐 Authentication
+
+| Method | Endpoint        | Description |
+|--------|----------------|-------------|
+| POST   | `/register`    | Register new user (recruiter/candidate) |
+| POST   | `/login`       | Login and receive access token |
+| GET    | `/me`          | Get current logged-in user |
+
+---
+
+### 💼 Jobs (Recruiter)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/create-job` | Create new job |
+| GET    | `/jobs` | Get all jobs |
+| PUT    | `/jobs/{job_id}` | Update job |
+| DELETE | `/jobs/{job_id}` | Delete job |
+
+---
+
+### 👤 Candidate
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/upload-resume` | Upload resume (PDF) |
+| GET    | `/my-resumes` | Get candidate resumes |
+| POST   | `/apply/{job_id}/{resume_id}` | Apply to job |
+| GET    | `/my-applications` | View applied jobs |
+
+---
+
+### 📊 Ranking Engine
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| POST   | `/rank-applicants/{job_id}?page=1&limit=10` | Rank applicants using AI scoring |
+
+---
+
+## 🧠 Ranking Logic
+
+The ranking engine combines:
+
+- ✅ Semantic Similarity Score (Sentence Transformers)
+- ✅ Skill Match Score
+- ✅ Overall Weighted Score
+- ✅ Recommendation Label:
+  - `Strong Fit`
+  - `Consider`
+  - `Low Fit`
+- ✅ Matched Skills
+- ✅ Missing Skills
+
+---
+
+📘 Full Interactive API Documentation:
+
+```
+http://127.0.0.1:8000/docs
+```
