@@ -34,3 +34,4 @@
 {"timestamp": "2026-05-16T07:58:57.997796Z", "level": "INFO", "logger": "backend.routes", "message": "User registered successfully: raj@gmail.com, id: 3", "module": "routes", "function": "register", "line": 127}
 {"timestamp": "2026-05-16T08:00:14.358117Z", "level": "INFO", "logger": "backend.routes", "message": "Loading spaCy model", "module": "routes", "function": "get_nlp", "line": 57}
 {"timestamp": "2026-05-16T08:05:42.168269Z", "level": "INFO", "logger": "backend.routes", "message": "Loading spaCy model", "module": "routes", "function": "get_nlp", "line": 57}
+{"timestamp": "2026-05-16T08:22:18.074490Z", "level": "INFO", "logger": "backend.routes", "message": "Loading spaCy model", "module": "routes", "function": "get_nlp", "line": 57}
