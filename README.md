@@ -41,8 +41,15 @@
 ## Quick Preview
 
 
-![Dashboard](assets/dashboard.png)
-![Rank Applicants](assets/rank.png)
+## Quick Preview
+
+<p align="center">
+  <img src="assets/dashboard.png" width="800"/>
+</p>
+
+<p align="center">
+  <img src="assets/rank.png" width="800"/>
+</p>
 
 ## Tech Stack
 
