@@ -40,8 +40,6 @@
 
 ## Quick Preview
 
-Add your screenshots here after upload:
-
 ```md
 
 ![Dashboard](./assets/dashboard.png)
